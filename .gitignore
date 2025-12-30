@@ -1,0 +1,17 @@
+# Ignore Data
+data/
+*.csv
+*.zip
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore Virtual Environment (if it's in this folder)
+galaxy_env/
+.venv/
+env/
+
+# Ignore IDE settings
+.vscode/
+.vs/

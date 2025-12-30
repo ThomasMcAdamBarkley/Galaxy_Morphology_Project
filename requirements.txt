@@ -1,0 +1,20 @@
+# Data Manipulation
+numpy
+pandas
+
+# Image Processing
+scikit-image
+Pillow
+
+# Visualization
+matplotlib
+seaborn
+
+# Machine Learning & Metrics
+scikit-learn
+
+# Deep Learning (The heavy lifter)
+tensorflow
+
+# Utilities
+tqdm
