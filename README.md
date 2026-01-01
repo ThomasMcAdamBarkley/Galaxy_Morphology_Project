@@ -4,11 +4,11 @@ You can create a file named `README.md` in your root folder and paste this conte
 
 ---
 
-# 🌌 Galaxy Morphology Classification & Debugging
+# Galaxy Morphology Classification & Debugging
 
 **Automated classification of galaxy shapes using Deep Learning (CNNs), with a focus on Interpretability (XAI) and artifact removal.**
 
-## 📖 Overview
+## Overview
 
 This project builds a Convolutional Neural Network (CNN) to classify galaxies from the Galaxy Zoo dataset. Beyond achieving high accuracy, the project focuses on **Interpretability**—using techniques like **Grad-CAM** to interrogate *why* the model makes specific decisions.
 
@@ -95,7 +95,7 @@ python src/analyze_native_reconstruct.py
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 Galaxy_Morphology_Project/
@@ -113,7 +113,7 @@ Galaxy_Morphology_Project/
 
 ```
 
-## 🚀 Next Steps
+## Next Steps
 
 * [ ] Refactor file structure for cleaner production deployment.
 * [ ] Migrate training logic back to Jupyter Notebooks for better documentation/narrative.
@@ -123,5 +123,4 @@ Galaxy_Morphology_Project/
 
 ---
 
-**Author:** [Your Name]
-**License:** MIT
+**Author:** Tom Barkley
