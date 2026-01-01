@@ -6,7 +6,7 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.layers import Conv2D, Input
 
 # --- CONFIGURATION ---
-MODEL_PATH = 'src/galaxy_model_best.keras'
+MODEL_PATH = 'src/galaxy_model_augmented.keras'
 # Your specific image
 IMAGE_PATH = r"C:\Dev\Projects\Galaxy_Morphology_Project\data\images_train\100008.jpg"
 TARGET_SIZE = (64, 64) 
@@ -103,7 +103,7 @@ def main():
     superimposed_img = jet_heatmap * 0.4 + (img_array * 255) * 0.6
     superimposed_img = np.clip(superimposed_img, 0, 255).astype(np.uint8)
 
-    output_filename = 'row_3_final_analysis.png'
+    output_filename = 'row_3_augmented_analysis.png'
     plt.imsave(output_filename, superimposed_img)
     print(f"Success! Saved '{output_filename}'")
 
