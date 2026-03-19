@@ -6,20 +6,24 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLRO
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import yaml
 from pathlib import Path
 
-# --- CONFIGURATION ---
-IMG_HEIGHT = 128
-IMG_WIDTH = 128
-BATCH_SIZE = 32
-EPOCHS = 50  # EarlyStopping will cut this short as needed
-
-# PATHS — relative to project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRAIN_DIR = str(PROJECT_ROOT / "data" / "images_train")
-CSV_PATH = str(PROJECT_ROOT / "data" / "training_solutions_rev1.csv")
-OUTPUTS_DIR = PROJECT_ROOT / "outputs"
-MODEL_OUT = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
+
+# --- CONFIGURATION (config.yaml) ---
+_cfg = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text())
+IMG_HEIGHT  = _cfg["training"]["img_height"]
+IMG_WIDTH   = _cfg["training"]["img_width"]
+BATCH_SIZE  = _cfg["training"]["batch_size"]
+EPOCHS      = _cfg["training"]["epochs"]
+VAL_SPLIT   = _cfg["training"]["validation_split"]
+SEED        = _cfg["training"]["random_seed"]
+
+TRAIN_DIR   = str(PROJECT_ROOT / _cfg["paths"]["train_dir"])
+CSV_PATH    = str(PROJECT_ROOT / _cfg["paths"]["csv_path"])
+OUTPUTS_DIR = PROJECT_ROOT / _cfg["paths"]["outputs_dir"]
+MODEL_OUT   = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
 
 
 def build_model(num_classes):
@@ -107,13 +111,13 @@ def train_model():
         vertical_flip=True,
         zoom_range=0.1,
         fill_mode='nearest',
-        validation_split=0.2,
+        validation_split=VAL_SPLIT,
     )
 
     # Validation gets only rescaling — no augmentation
     val_datagen = ImageDataGenerator(
         rescale=1. / 255,
-        validation_split=0.2,
+        validation_split=VAL_SPLIT,
     )
 
     train_generator = train_datagen.flow_from_dataframe(
@@ -126,7 +130,7 @@ def train_model():
         class_mode='categorical',
         subset='training',
         shuffle=True,
-        seed=42,
+        seed=SEED,
     )
 
     validation_generator = val_datagen.flow_from_dataframe(
@@ -139,7 +143,7 @@ def train_model():
         class_mode='categorical',
         subset='validation',
         shuffle=False,
-        seed=42,
+        seed=SEED,
     )
 
     num_classes = len(train_generator.class_indices)

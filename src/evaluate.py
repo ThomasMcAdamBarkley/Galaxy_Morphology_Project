@@ -14,22 +14,27 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import Conv2D, Input
 from tensorflow.keras.models import Model
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+import yaml
 import pandas as pd
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRAIN_DIR = str(PROJECT_ROOT / "data" / "images_train")
-CSV_PATH = str(PROJECT_ROOT / "data" / "training_solutions_rev1.csv")
-OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 
-IMG_HEIGHT = 128
-IMG_WIDTH = 128
-BATCH_SIZE = 32
+_cfg = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text())
+IMG_HEIGHT  = _cfg["training"]["img_height"]
+IMG_WIDTH   = _cfg["training"]["img_width"]
+BATCH_SIZE  = _cfg["training"]["batch_size"]
+VAL_SPLIT   = _cfg["training"]["validation_split"]
+SEED        = _cfg["training"]["random_seed"]
+
+TRAIN_DIR   = str(PROJECT_ROOT / _cfg["paths"]["train_dir"])
+CSV_PATH    = str(PROJECT_ROOT / _cfg["paths"]["csv_path"])
+OUTPUTS_DIR = PROJECT_ROOT / _cfg["paths"]["outputs_dir"]
 CLASSES = ['Class1.1', 'Class1.2', 'Class1.3']
 
 
 def load_validation_generator(df):
-    val_datagen = ImageDataGenerator(rescale=1. / 255, validation_split=0.2)
+    val_datagen = ImageDataGenerator(rescale=1. / 255, validation_split=VAL_SPLIT)
     return val_datagen.flow_from_dataframe(
         dataframe=df,
         directory=TRAIN_DIR,
@@ -40,7 +45,7 @@ def load_validation_generator(df):
         class_mode='categorical',
         subset='validation',
         shuffle=False,
-        seed=42,
+        seed=SEED,
     )
 
 

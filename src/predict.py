@@ -19,14 +19,16 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.layers import Conv2D, Input
 from tensorflow.keras.models import Model
+import yaml
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MODELS_DIR   = PROJECT_ROOT / "src" / "models"
-OUTPUTS_DIR  = PROJECT_ROOT / "outputs"
 
-IMG_HEIGHT = 128
-IMG_WIDTH  = 128
+_cfg        = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text())
+IMG_HEIGHT  = _cfg["training"]["img_height"]
+IMG_WIDTH   = _cfg["training"]["img_width"]
+MODELS_DIR  = PROJECT_ROOT / _cfg["paths"]["models_dir"]
+OUTPUTS_DIR = PROJECT_ROOT / _cfg["paths"]["outputs_dir"]
 
 # Decision-tree structure — mirrors train_hierarchical.py
 TREE = [

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import yaml
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (
@@ -24,21 +25,22 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from pathlib import Path
 
-# --- CONFIGURATION ---
-IMG_HEIGHT = 128
-IMG_WIDTH  = 128
-BATCH_SIZE = 32
-EPOCHS     = 50
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRAIN_DIR    = str(PROJECT_ROOT / "data" / "images_train")
-CSV_PATH     = str(PROJECT_ROOT / "data" / "training_solutions_rev1.csv")
-MODELS_DIR   = PROJECT_ROOT / "src" / "models"
-OUTPUTS_DIR  = PROJECT_ROOT / "outputs"
 
-# Probability threshold: a galaxy "belongs" to a branch if its parent
-# class probability exceeds this value.
-BRANCH_THRESHOLD = 0.5
+# --- CONFIGURATION (config.yaml) ---
+_cfg = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text())
+IMG_HEIGHT       = _cfg["training"]["img_height"]
+IMG_WIDTH        = _cfg["training"]["img_width"]
+BATCH_SIZE       = _cfg["training"]["batch_size"]
+EPOCHS           = _cfg["training"]["epochs"]
+BRANCH_THRESHOLD = _cfg["training"]["branch_threshold"]
+VAL_SPLIT        = _cfg["training"]["validation_split"]
+SEED             = _cfg["training"]["random_seed"]
+
+TRAIN_DIR    = str(PROJECT_ROOT / _cfg["paths"]["train_dir"])
+CSV_PATH     = str(PROJECT_ROOT / _cfg["paths"]["csv_path"])
+MODELS_DIR   = PROJECT_ROOT / _cfg["paths"]["models_dir"]
+OUTPUTS_DIR  = PROJECT_ROOT / _cfg["paths"]["outputs_dir"]
 
 
 # ---------------------------------------------------------------------------
@@ -158,9 +160,9 @@ def train_node(node_name: str, df_full: pd.DataFrame):
         vertical_flip=True,
         zoom_range=0.1,
         fill_mode="nearest",
-        validation_split=0.2,
+        validation_split=VAL_SPLIT,
     )
-    val_datagen = ImageDataGenerator(rescale=1. / 255, validation_split=0.2)
+    val_datagen = ImageDataGenerator(rescale=1. / 255, validation_split=VAL_SPLIT)
 
     common = dict(
         directory=TRAIN_DIR,
@@ -169,7 +171,7 @@ def train_node(node_name: str, df_full: pd.DataFrame):
         target_size=(IMG_HEIGHT, IMG_WIDTH),
         batch_size=BATCH_SIZE,
         class_mode="categorical",
-        seed=42,
+        seed=SEED,
     )
     train_gen = train_datagen.flow_from_dataframe(
         df, subset="training", shuffle=True, **common)

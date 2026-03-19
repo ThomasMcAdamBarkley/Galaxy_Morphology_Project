@@ -21,3 +21,6 @@ tqdm
 
 # Notebook support
 jupyter
+
+# Config management
+pyyaml

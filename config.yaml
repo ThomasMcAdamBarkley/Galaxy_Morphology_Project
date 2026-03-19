@@ -1,0 +1,14 @@
+training:
+  img_height: 128
+  img_width: 128
+  batch_size: 32
+  epochs: 50
+  branch_threshold: 0.5   # min probability for a galaxy to enter a sub-classifier
+  validation_split: 0.2
+  random_seed: 42
+
+paths:
+  train_dir: data/images_train
+  csv_path:  data/training_solutions_rev1.csv
+  models_dir: src/models
+  outputs_dir: outputs
