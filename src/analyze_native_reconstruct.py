@@ -1,4 +1,5 @@
 import argparse
+import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -9,9 +10,10 @@ from pathlib import Path
 
 # --- CONFIGURATION ---
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MODEL_PATH = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
+_cfg = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text())
+MODEL_PATH    = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
 DEFAULT_IMAGE = str(PROJECT_ROOT / "data" / "images_train" / "100008.jpg")
-TARGET_SIZE = (64, 64)
+TARGET_SIZE   = (_cfg["training"]["img_height"], _cfg["training"]["img_width"])
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     # --- RECONSTRUCTION STRATEGY ---
@@ -19,7 +21,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     # using the existing layers and weights. This bypasses Keras 3 "never called" errors.
     
     # 1. Create a fresh input placeholder
-    inputs = Input(shape=(64, 64, 3))
+    inputs = Input(shape=(TARGET_SIZE[0], TARGET_SIZE[1], 3))
     
     # 2. Walk through the layers and connect them manually
     x = inputs
