@@ -4,18 +4,18 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input
 import pandas as pd
 import os
+from pathlib import Path
 
 # --- CONFIGURATION ---
-# We use 64x64 to match your previous model's resolution
 IMG_HEIGHT = 64
 IMG_WIDTH = 64
 BATCH_SIZE = 32
 EPOCHS = 5  # Start with 5 to test it quickly
 
-# PATHS (Verify these match your folder structure!)
-# This assumes your images are in 'data/images_train'
-TRAIN_DIR = r"C:\Dev\Projects\Galaxy_Morphology_Project\data\images_train"
-CSV_PATH = r"C:\Dev\Projects\Galaxy_Morphology_Project\data\training_solutions_rev1.csv"
+# PATHS — relative to project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+TRAIN_DIR = str(PROJECT_ROOT / "data" / "images_train")
+CSV_PATH = str(PROJECT_ROOT / "data" / "training_solutions_rev1.csv")
 
 def train_model():
     print(f"Checking for data at: {TRAIN_DIR}")

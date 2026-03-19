@@ -1,15 +1,17 @@
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import load_model, Model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.layers import Conv2D, Input
+from pathlib import Path
 
 # --- CONFIGURATION ---
-MODEL_PATH = 'src/galaxy_model_augmented.keras'
-# Your specific image
-IMAGE_PATH = r"C:\Dev\Projects\Galaxy_Morphology_Project\data\images_train\100008.jpg"
-TARGET_SIZE = (64, 64) 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODEL_PATH = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
+DEFAULT_IMAGE = str(PROJECT_ROOT / "data" / "images_train" / "100008.jpg")
+TARGET_SIZE = (64, 64)
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     # --- RECONSTRUCTION STRATEGY ---
@@ -53,15 +55,20 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     return heatmap.numpy()
 
 def main():
+    parser = argparse.ArgumentParser(description="Grad-CAM analysis for galaxy morphology model")
+    parser.add_argument("--image", default=DEFAULT_IMAGE, help="Path to input galaxy image")
+    parser.add_argument("--output", default=str(PROJECT_ROOT / "outputs" / "gradcam.png"), help="Output path for heatmap")
+    args = parser.parse_args()
+
     # A. Load Model
     print(f"Loading model from {MODEL_PATH}...")
     model = load_model(MODEL_PATH)
 
     # B. Load Image
     try:
-        img = load_img(IMAGE_PATH, target_size=TARGET_SIZE)
+        img = load_img(args.image, target_size=TARGET_SIZE)
     except FileNotFoundError:
-        print(f"Error: Could not find image at {IMAGE_PATH}")
+        print(f"Error: Could not find image at {args.image}")
         return
 
     img_array = img_to_array(img)
@@ -103,9 +110,10 @@ def main():
     superimposed_img = jet_heatmap * 0.4 + (img_array * 255) * 0.6
     superimposed_img = np.clip(superimposed_img, 0, 255).astype(np.uint8)
 
-    output_filename = 'row_3_augmented_analysis.png'
-    plt.imsave(output_filename, superimposed_img)
-    print(f"Success! Saved '{output_filename}'")
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.imsave(str(output_path), superimposed_img)
+    print(f"Success! Saved '{output_path}'")
 
 if __name__ == "__main__":
     main()
