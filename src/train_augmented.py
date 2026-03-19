@@ -1,60 +1,121 @@
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 import pandas as pd
-import os
+import numpy as np
+import matplotlib.pyplot as plt
 from pathlib import Path
 
 # --- CONFIGURATION ---
-IMG_HEIGHT = 64
-IMG_WIDTH = 64
+IMG_HEIGHT = 128
+IMG_WIDTH = 128
 BATCH_SIZE = 32
-EPOCHS = 5  # Start with 5 to test it quickly
+EPOCHS = 50  # EarlyStopping will cut this short as needed
 
 # PATHS — relative to project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TRAIN_DIR = str(PROJECT_ROOT / "data" / "images_train")
 CSV_PATH = str(PROJECT_ROOT / "data" / "training_solutions_rev1.csv")
+OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+MODEL_OUT = str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras")
+
+
+def build_model(num_classes):
+    model = Sequential([
+        Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+
+        # Block 1
+        Conv2D(32, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(2, 2),
+
+        # Block 2
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(2, 2),
+
+        # Block 3
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(2, 2),
+
+        # Block 4
+        Conv2D(256, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(2, 2),
+
+        Flatten(),
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(num_classes, activation='softmax'),
+    ])
+    return model
+
+
+def plot_history(history):
+    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+
+    ax1.plot(history.history['accuracy'], label='Train')
+    ax1.plot(history.history['val_accuracy'], label='Validation')
+    ax1.set_title('Accuracy')
+    ax1.set_xlabel('Epoch')
+    ax1.legend()
+
+    ax2.plot(history.history['loss'], label='Train')
+    ax2.plot(history.history['val_loss'], label='Validation')
+    ax2.set_title('Loss')
+    ax2.set_xlabel('Epoch')
+    ax2.legend()
+
+    out = OUTPUTS_DIR / "training_history.png"
+    fig.savefig(str(out), dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Training curves saved to {out}")
+
 
 def train_model():
-    print(f"Checking for data at: {TRAIN_DIR}")
-    if not os.path.exists(TRAIN_DIR):
-        print("ERROR: Image directory not found!")
+    if not Path(TRAIN_DIR).exists():
+        print(f"ERROR: Image directory not found at {TRAIN_DIR}")
         return
 
-    print("Loading CSV Data...")
+    print("Loading CSV...")
     try:
         df = pd.read_csv(CSV_PATH)
     except FileNotFoundError:
-        print(f"ERROR: CSV file not found at {CSV_PATH}")
+        print(f"ERROR: CSV not found at {CSV_PATH}")
         return
-    
-    # 1. Prepare Dataframe
-    # We add '.jpg' to the IDs so they match the filenames on disk
+
     df['filename'] = df['GalaxyID'].astype(str) + ".jpg"
-    
-    # 2. Define Classes (Simplified for this test)
-    # We will just detect the 3 main shapes for now to prove the augmentation works
-    # You can expand this logic later for the full 37 classes
-    classes = ['Class1.1', 'Class1.2', 'Class1.3'] 
+
+    # Top-level Galaxy Zoo morphology classes
+    classes = ['Class1.1', 'Class1.2', 'Class1.3']
     df['class_label'] = df[classes].idxmax(axis=1)
 
-    # --- THE FIX: DATA AUGMENTATION ---
-    # This is the "magic" part that stops the cheating.
-    print("Setting up Augmented Generators...")
+    print(f"Class distribution:\n{df['class_label'].value_counts()}\n")
+
+    # --- DATA GENERATORS ---
+    # Augmentation applied only to training data
     train_datagen = ImageDataGenerator(
-        rescale=1./255,         # Normalize pixel values
-        rotation_range=90,      # Rotate freely (galaxies have no "up")
-        width_shift_range=0.1,  # Shift slightly
-        height_shift_range=0.1, 
-        horizontal_flip=True,   # Mirror left/right
-        vertical_flip=True,     # Mirror up/down (galaxies have no gravity)
-        fill_mode='nearest',    # Fill empty space with edge pixels
-        validation_split=0.2    # Reserve 20% for testing
+        rescale=1. / 255,
+        rotation_range=360,      # Full rotation — galaxies have no "up"
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        horizontal_flip=True,
+        vertical_flip=True,
+        zoom_range=0.1,
+        fill_mode='nearest',
+        validation_split=0.2,
     )
 
-    # Training Data Generator
+    # Validation gets only rescaling — no augmentation
+    val_datagen = ImageDataGenerator(
+        rescale=1. / 255,
+        validation_split=0.2,
+    )
+
     train_generator = train_datagen.flow_from_dataframe(
         dataframe=df,
         directory=TRAIN_DIR,
@@ -63,11 +124,12 @@ def train_model():
         target_size=(IMG_HEIGHT, IMG_WIDTH),
         batch_size=BATCH_SIZE,
         class_mode='categorical',
-        subset='training'
+        subset='training',
+        shuffle=True,
+        seed=42,
     )
 
-    # Validation Data Generator
-    validation_generator = train_datagen.flow_from_dataframe(
+    validation_generator = val_datagen.flow_from_dataframe(
         dataframe=df,
         directory=TRAIN_DIR,
         x_col="filename",
@@ -75,50 +137,60 @@ def train_model():
         target_size=(IMG_HEIGHT, IMG_WIDTH),
         batch_size=BATCH_SIZE,
         class_mode='categorical',
-        subset='validation'
+        subset='validation',
+        shuffle=False,
+        seed=42,
     )
 
-    # --- MODEL ARCHITECTURE ---
-    print("Building Model...")
-    model = Sequential([
-        Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-        
-        # Layer 1
-        Conv2D(32, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
+    num_classes = len(train_generator.class_indices)
+    print(f"Classes: {train_generator.class_indices}")
 
-        # Layer 2
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
+    # --- MODEL ---
+    model = build_model(num_classes)
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss='categorical_crossentropy',
+        metrics=['accuracy'],
+    )
+    model.summary()
 
-        # Layer 3
-        Conv2D(128, (3, 3), activation='relu'),
-        MaxPooling2D(2, 2),
+    # --- CALLBACKS ---
+    callbacks = [
+        EarlyStopping(
+            monitor='val_loss',
+            patience=7,
+            restore_best_weights=True,
+            verbose=1,
+        ),
+        ModelCheckpoint(
+            filepath=MODEL_OUT,
+            monitor='val_accuracy',
+            save_best_only=True,
+            verbose=1,
+        ),
+        ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=3,
+            min_lr=1e-6,
+            verbose=1,
+        ),
+    ]
 
-        Flatten(),
-        Dense(128, activation='relu'),
-        Dropout(0.5), 
-        Dense(len(train_generator.class_indices), activation='softmax')
-    ])
-
-    model.compile(optimizer='adam',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
-
-    # --- RUN TRAINING ---
-    print("Starting Training (This may take a while)...")
+    # --- TRAINING ---
+    print("\nStarting training...")
     history = model.fit(
         train_generator,
         steps_per_epoch=train_generator.samples // BATCH_SIZE,
         validation_data=validation_generator,
         validation_steps=validation_generator.samples // BATCH_SIZE,
-        epochs=EPOCHS
+        epochs=EPOCHS,
+        callbacks=callbacks,
     )
 
-    # Save the fixed model
-    output_path = 'src/galaxy_model_augmented.keras'
-    model.save(output_path)
-    print(f"Training Complete! New model saved to: {output_path}")
+    plot_history(history)
+    print(f"\nBest model saved to: {MODEL_OUT}")
+
 
 if __name__ == "__main__":
     train_model()
