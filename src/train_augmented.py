@@ -3,6 +3,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Input, BatchNormalization
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from sklearn.utils.class_weight import compute_class_weight
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -149,6 +150,16 @@ def train_model():
     num_classes = len(train_generator.class_indices)
     print(f"Classes: {train_generator.class_indices}")
 
+    # --- CLASS WEIGHTS ---
+    # Class1.3 (Star/Artifact) has ~59 samples vs ~30k for the others.
+    # Inverse-frequency weights tell the model to penalise missed artifacts
+    # proportionally more, preventing the majority classes from dominating.
+    labels = df['class_label'].values
+    class_names = sorted(train_generator.class_indices.keys())
+    weights = compute_class_weight('balanced', classes=np.array(class_names), y=labels)
+    class_weight = {train_generator.class_indices[c]: w for c, w in zip(class_names, weights)}
+    print(f"Class weights: { {c: f'{class_weight[train_generator.class_indices[c]]:.1f}' for c in class_names} }")
+
     # --- MODEL ---
     model = build_model(num_classes)
     model.compile(
@@ -190,6 +201,7 @@ def train_model():
         validation_steps=validation_generator.samples // BATCH_SIZE,
         epochs=EPOCHS,
         callbacks=callbacks,
+        class_weight=class_weight,
     )
 
     plot_history(history)

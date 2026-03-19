@@ -1,0 +1,7 @@
+# Always use LF line endings for Jupyter notebooks.
+# Prevents Git on Windows converting \n → \r\n (CRLF), which causes
+# spurious whole-file diffs and can break notebook JSON parsing.
+*.ipynb text eol=lf
+
+# Standard: LF for all text files checked into this repo
+* text=auto eol=lf
