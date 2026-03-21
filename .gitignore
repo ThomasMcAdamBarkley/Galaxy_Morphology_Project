@@ -15,3 +15,7 @@ env/
 # Ignore IDE settings
 .vscode/
 .vs/
+
+# Ignore trained model files (too large for GitHub — store locally)
+*.keras
+*.h5
