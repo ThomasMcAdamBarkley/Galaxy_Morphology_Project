@@ -124,7 +124,7 @@ def plot_history(history, node_name: str):
     out = OUTPUTS_DIR / f"history_{node_name}.png"
     fig.savefig(str(out), dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print(f"  Training curves → {out}")
+    print(f"  Training curves -> {out}")
 
 
 # ---------------------------------------------------------------------------
