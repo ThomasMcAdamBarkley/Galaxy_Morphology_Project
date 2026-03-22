@@ -18,3 +18,9 @@ tensorflow
 
 # Utilities
 tqdm
+
+# Notebook support
+jupyter
+
+# Config management
+pyyaml
