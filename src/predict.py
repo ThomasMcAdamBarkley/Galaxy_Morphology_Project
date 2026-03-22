@@ -2,9 +2,9 @@
 predict.py — Run a single galaxy image through the full hierarchical classifier.
 
 Chains the 3 decision-tree nodes in order:
-  clf_top  → Q1: Smooth / Features-Disk / Star-Artifact
-  clf_edge → Q2: Edge-on / Not-edge-on          (only if Features-Disk)
-  clf_bar  → Q3: Bar / No-bar                   (only if Not-edge-on)
+  clf_top  -> Q1: Smooth / Features-Disk / Star-Artifact
+  clf_edge -> Q2: Edge-on / Not-edge-on          (only if Features-Disk)
+  clf_bar  -> Q3: Bar / No-bar                   (only if Not-edge-on)
 
 Usage:
     python src/predict.py --image data/images_train/100008.jpg
@@ -135,7 +135,7 @@ def run_inference(image_path: str, save_path: str | None = None):
             "overlay":    overlay,
         })
 
-        print(f"  → {pred_label}  ({confidence:.1%} confidence)")
+        print(f"  -> {pred_label}  ({confidence:.1%} confidence)")
 
         # Stop traversal if the predicted class doesn't open the next branch
         if node["branch_on"] is None or pred_label != node["branch_on"]:
@@ -183,7 +183,7 @@ def run_inference(image_path: str, save_path: str | None = None):
             bbox=dict(boxstyle="round,pad=0.2", facecolor="black", alpha=0.6),
         )
         ax.set_xlabel(
-            f"→ {r['pred_label']} ({r['confidence']:.1%})",
+            f"-> {r['pred_label']} ({r['confidence']:.1%})",
             fontsize=9, color="white",
             labelpad=2,
         )
@@ -199,7 +199,7 @@ def run_inference(image_path: str, save_path: str | None = None):
 
     fig.savefig(str(out), dpi=150, bbox_inches="tight", facecolor="#111111")
     plt.close(fig)
-    print(f"\nVisualization saved → {out}")
+    print(f"\nVisualization saved -> {out}")
 
 
 def main():

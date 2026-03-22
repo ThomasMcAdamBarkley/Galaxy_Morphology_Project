@@ -202,7 +202,7 @@ def train_node(node_name: str, df_full: pd.DataFrame):
     )
 
     plot_history(history, node_name)
-    print(f"  Best model saved → {model_path}")
+    print(f"  Best model saved -> {model_path}")
     return history
 
 
