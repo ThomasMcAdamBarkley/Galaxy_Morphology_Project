@@ -1,5 +1,9 @@
-# Ignore Data
-data/
+# Ignore Data (but keep directory placeholders)
+data/*
+!data/.gitkeep
+!data/images_train/
+data/images_train/*
+!data/images_train/.gitkeep
 *.csv
 *.zip
 
@@ -19,3 +23,5 @@ env/
 # Ignore trained model files (too large for GitHub — store locally)
 *.keras
 *.h5
+# But keep directory placeholders
+!src/models/.gitkeep

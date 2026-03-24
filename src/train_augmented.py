@@ -152,11 +152,14 @@ def train_model():
 
     # --- CLASS WEIGHTS ---
     # Class1.3 (Star/Artifact) has ~59 samples vs ~30k for the others.
-    # Inverse-frequency weights tell the model to penalise missed artifacts
-    # proportionally more, preventing the majority classes from dominating.
+    # Raw balanced weights give Class1.3 a weight of ~348x which causes
+    # gradient explosion. Cap at MAX_WEIGHT to keep training stable while
+    # still giving the rare class meaningful upweighting.
+    MAX_WEIGHT = 20.0
     labels = df['class_label'].values
     class_names = sorted(train_generator.class_indices.keys())
     weights = compute_class_weight('balanced', classes=np.array(class_names), y=labels)
+    weights = np.clip(weights, 1.0, MAX_WEIGHT)
     class_weight = {train_generator.class_indices[c]: w for c, w in zip(class_names, weights)}
     print(f"Class weights: { {c: f'{class_weight[train_generator.class_indices[c]]:.1f}' for c in class_names} }")
 

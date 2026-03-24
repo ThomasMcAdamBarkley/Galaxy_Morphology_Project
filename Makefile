@@ -10,33 +10,42 @@
 #   make predict IMAGE=data/images_train/100008.jpg
 #   make gradcam  IMAGE=data/images_train/100008.jpg
 
-.PHONY: install train train-hierarchical evaluate predict gradcam clean
+.PHONY: install train train-hierarchical train-bar evaluate predict gradcam clean
 
 # ── defaults ──────────────────────────────────────────────────────────────────
 IMAGE ?= data/images_train/100008.jpg
 NODE  ?= all
 
+PYTHON ?= .venv/bin/python
+
 # ── setup ─────────────────────────────────────────────────────────────────────
-install:
-	pip install -r requirements.txt
+venv:
+	python3 -m venv .venv
+
+install: venv
+	.venv/bin/pip install --upgrade pip -q
+	.venv/bin/pip install -r requirements.txt
 
 # ── training ──────────────────────────────────────────────────────────────────
 train:
-	python src/train_augmented.py
+	$(PYTHON) src/train_augmented.py
 
 train-hierarchical:
-	python src/train_hierarchical.py --node $(NODE)
+	$(PYTHON) src/train_hierarchical.py --node $(NODE)
+
+train-bar:
+	$(PYTHON) src/train_bar_efficientnet.py
 
 # ── evaluation ────────────────────────────────────────────────────────────────
 evaluate:
-	python src/evaluate.py
+	$(PYTHON) src/evaluate.py
 
 # ── inference ─────────────────────────────────────────────────────────────────
 predict:
-	python src/predict.py --image $(IMAGE)
+	$(PYTHON) src/predict.py --image $(IMAGE)
 
 gradcam:
-	python src/analyze_native_reconstruct.py --image $(IMAGE)
+	$(PYTHON) src/analyze_native_reconstruct.py --image $(IMAGE)
 
 # ── housekeeping ──────────────────────────────────────────────────────────────
 clean:

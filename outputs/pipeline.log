@@ -1,0 +1,4 @@
+bash: line 2: wait: pid 985230 is not a child of this shell
+[05:58:45] train_augmented done — starting train-hierarchical
+[01:12:52] hierarchical done — starting evaluate
+[01:16:24] Pipeline complete

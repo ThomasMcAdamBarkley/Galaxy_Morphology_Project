@@ -151,6 +151,11 @@ def main():
 
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    if not Path(args.model).exists():
+        print(f"ERROR: Model not found at {args.model}")
+        print("       Run 'make train' first to produce galaxy_model_augmented.keras")
+        return
+
     print(f"Loading model from {args.model}...")
     model = load_model(args.model)
 

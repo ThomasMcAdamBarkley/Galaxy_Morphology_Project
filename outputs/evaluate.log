@@ -1,0 +1,33 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1774314773.607994 3159881 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1774314773.610537 3159881 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+I0000 00:00:1774314773.704074 3159881 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1774314775.614419 3159881 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1774314775.614726 3159881 cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+E0000 00:00:1774314777.821301 3159881 cuda_platform.cc:52] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
+Loading model from /home/barkl/docker_app/Galaxy_Morphology_Project/src/galaxy_model_augmented.keras...
+Loading validation data...
+Found 12315 validated image filenames belonging to 3 classes.
+Running predictions on validation set...
+
+--- Classification Report ---
+              precision    recall  f1-score   support
+
+    Class1.1       0.70      0.38      0.50      5372
+    Class1.2       0.65      0.87      0.74      6934
+    Class1.3       0.12      0.33      0.18         9
+
+    accuracy                           0.66     12315
+   macro avg       0.49      0.53      0.47     12315
+weighted avg       0.67      0.66      0.64     12315
+
+Report saved to /home/barkl/docker_app/Galaxy_Morphology_Project/outputs/classification_report.txt
+Confusion matrix saved to /home/barkl/docker_app/Galaxy_Morphology_Project/outputs/confusion_matrix.png
+
+Generating Grad-CAM for worst predictions...
+Found 12315 validated image filenames belonging to 3 classes.
+Worst predictions + Grad-CAM saved to /home/barkl/docker_app/Galaxy_Morphology_Project/outputs/worst_predictions_gradcam.png
+
+Evaluation complete.

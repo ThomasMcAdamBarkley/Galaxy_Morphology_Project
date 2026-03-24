@@ -1,26 +1,26 @@
 # Data Manipulation
-numpy
-pandas
+numpy>=1.26.0
+pandas>=2.1.0
 
 # Image Processing
-scikit-image
-Pillow
+scikit-image>=0.22.0
+Pillow>=10.0.0
 
 # Visualization
-matplotlib
-seaborn
+matplotlib>=3.8.0
+seaborn>=0.13.0
 
 # Machine Learning & Metrics
-scikit-learn
+scikit-learn>=1.4.0
 
-# Deep Learning (The heavy lifter)
-tensorflow
+# Deep Learning (TF 2.16+ required for Python 3.12)
+tensorflow>=2.16.0
 
 # Utilities
-tqdm
+tqdm>=4.66.0
 
 # Notebook support
 jupyter
 
 # Config management
-pyyaml
+pyyaml>=6.0.0

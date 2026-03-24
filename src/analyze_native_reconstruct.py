@@ -53,7 +53,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     heatmap = tf.squeeze(heatmap)
 
     # Normalize
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-8)
     return heatmap.numpy()
 
 def main():
@@ -63,6 +63,10 @@ def main():
     args = parser.parse_args()
 
     # A. Load Model
+    if not Path(MODEL_PATH).exists():
+        print(f"ERROR: Model not found at {MODEL_PATH}")
+        print("       Run 'make train' first to produce galaxy_model_augmented.keras")
+        return
     print(f"Loading model from {MODEL_PATH}...")
     model = load_model(MODEL_PATH)
 

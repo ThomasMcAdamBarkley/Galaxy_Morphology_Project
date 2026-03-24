@@ -23,6 +23,7 @@ from tensorflow.keras.layers import (
     Dropout, Input, BatchNormalization,
 )
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from sklearn.utils.class_weight import compute_class_weight
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -180,7 +181,21 @@ def train_node(node_name: str, df_full: pd.DataFrame):
 
     print(f"  Class indices: {train_gen.class_indices}")
 
-    # 4. Build + compile
+    # 4. Class weights — balance against imbalanced nodes (esp. clf_top Class1.3)
+    # Cap at MAX_WEIGHT: raw balanced weights for Class1.3 (~59 samples) reach
+    # ~348x which causes gradient explosion. 20x is still strongly corrective.
+    MAX_WEIGHT = 20.0
+    class_names_sorted = sorted(train_gen.class_indices.keys())
+    raw_weights = compute_class_weight(
+        "balanced",
+        classes=np.array(class_names_sorted),
+        y=df["class_label"].values,
+    )
+    raw_weights = np.clip(raw_weights, 1.0, MAX_WEIGHT)
+    class_weight = {train_gen.class_indices[c]: w for c, w in zip(class_names_sorted, raw_weights)}
+    print(f"  Class weights: { {c: f'{class_weight[train_gen.class_indices[c]]:.2f}' for c in class_names_sorted} }")
+
+    # 5. Build + compile
     model = build_model(len(train_gen.class_indices))
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
@@ -188,7 +203,7 @@ def train_node(node_name: str, df_full: pd.DataFrame):
         metrics=["accuracy"],
     )
 
-    # 5. Train
+    # 6. Train
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     model_path = str(MODELS_DIR / cfg["model_file"])
 
@@ -199,6 +214,7 @@ def train_node(node_name: str, df_full: pd.DataFrame):
         validation_steps=val_gen.samples // BATCH_SIZE,
         epochs=EPOCHS,
         callbacks=make_callbacks(model_path),
+        class_weight=class_weight,
     )
 
     plot_history(history, node_name)

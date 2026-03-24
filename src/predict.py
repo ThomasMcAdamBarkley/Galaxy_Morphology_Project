@@ -63,15 +63,47 @@ def preprocess(image_path: str) -> np.ndarray:
     return np.expand_dims(arr, axis=0).astype(np.float32)
 
 
+def _find_last_conv(model: tf.keras.Model):
+    """Find the last Conv2D layer, recursing into nested sub-models."""
+    for layer in reversed(model.layers):
+        if hasattr(layer, 'layers'):          # nested Functional / Sequential
+            found = _find_last_conv(layer)
+            if found is not None:
+                return found
+        if isinstance(layer, Conv2D):
+            return layer
+    return None
+
+
+def _layer_contains(parent, target) -> bool:
+    """Return True if target layer is anywhere inside parent's sub-layers."""
+    for l in getattr(parent, 'layers', []):
+        if l is target or _layer_contains(l, target):
+            return True
+    return False
+
+
 def gradcam_heatmap(img_tensor: np.ndarray, model: tf.keras.Model) -> np.ndarray:
-    last_conv = next(l for l in reversed(model.layers) if isinstance(l, Conv2D))
+    last_conv = _find_last_conv(model)
+    if last_conv is None:
+        raise ValueError("No Conv2D layer found in model.")
+
+    # Rebuild the forward pass as a new functional graph so we can tap
+    # last_conv's output regardless of whether model.input is defined
+    # (Sequential models without an explicit Input layer don't define it).
     inputs = Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3))
     x = inputs
     conv_out = None
     for layer in model.layers:
-        x = layer(x)
-        if layer.name == last_conv.name:
-            conv_out = x
+        if hasattr(layer, 'layers') and _layer_contains(layer, last_conv):
+            # Nested Functional model (e.g. EfficientNetB0) — expose the
+            # target Conv2D output via a temporary sub-model.
+            sub = Model(inputs=layer.input, outputs=[last_conv.output, layer.output])
+            conv_out, x = sub(x)
+        else:
+            x = layer(x)
+            if layer is last_conv:
+                conv_out = x
     grad_model = Model(inputs, [conv_out, x])
 
     with tf.GradientTape() as tape:
