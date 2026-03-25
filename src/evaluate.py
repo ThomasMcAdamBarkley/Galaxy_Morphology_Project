@@ -50,20 +50,53 @@ def load_validation_generator(df):
 
 
 def make_gradcam_heatmap(img_tensor, model):
-    last_conv = next(l for l in reversed(model.layers) if isinstance(l, Conv2D))
-    inputs = Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3))
-    x = inputs
-    conv_out = None
-    for layer in model.layers:
-        x = layer(x)
-        if layer.name == last_conv.name:
-            conv_out = x
-    grad_model = Model(inputs, [conv_out, x])
+    # Find the last Conv2D, searching inside nested sub-models (e.g. EfficientNetB0)
+    sub_models = [l for l in model.layers if isinstance(l, tf.keras.Model)]
 
-    with tf.GradientTape() as tape:
-        conv_output, preds = grad_model(img_tensor)
-        pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
+    if sub_models:
+        base = sub_models[0]
+        last_conv = next((l for l in reversed(base.layers) if isinstance(l, Conv2D)), None)
+        if last_conv is None:
+            return np.zeros((7, 7))
+
+        # Sub-model that outputs [last_conv activations, full base output] in one pass
+        base_with_conv = Model(inputs=base.inputs,
+                               outputs=[last_conv.output, base.output])
+
+        # Outer layers before and after the sub-model
+        pre_layers = []
+        post_layers = []
+        found_base = False
+        for layer in model.layers:
+            if layer is base:
+                found_base = True
+                continue
+            if isinstance(layer, tf.keras.layers.InputLayer):
+                continue
+            (post_layers if found_base else pre_layers).append(layer)
+
+        with tf.GradientTape() as tape:
+            x = img_tensor
+            for layer in pre_layers:
+                x = layer(x)
+            conv_output, base_out = base_with_conv(x, training=False)
+            tape.watch(conv_output)
+            out = base_out
+            for layer in post_layers:
+                out = layer(out, training=False) if hasattr(layer, 'training') else layer(out)
+            pred_index = tf.argmax(out[0])
+            class_channel = out[:, pred_index]
+    else:
+        # Fallback: flat Sequential/functional model
+        last_conv = next((l for l in reversed(model.layers) if isinstance(l, Conv2D)), None)
+        if last_conv is None:
+            return np.zeros((7, 7))
+        grad_model = Model(model.inputs, [last_conv.output, model.output])
+        with tf.GradientTape() as tape:
+            conv_output, out = grad_model(img_tensor)
+            tape.watch(conv_output)
+            pred_index = tf.argmax(out[0])
+            class_channel = out[:, pred_index]
 
     grads = tape.gradient(class_channel, conv_output)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
@@ -146,14 +179,14 @@ def plot_worst_predictions(model, df, val_gen, class_names, n=5):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default=str(PROJECT_ROOT / "src" / "galaxy_model_augmented.keras"))
+    parser.add_argument("--model", default=str(PROJECT_ROOT / "src" / "models" / "clf_top.keras"))
     args = parser.parse_args()
 
     OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
 
     if not Path(args.model).exists():
         print(f"ERROR: Model not found at {args.model}")
-        print("       Run 'make train' first to produce galaxy_model_augmented.keras")
+        print("       Run 'make train-hierarchical' first to produce clf_top.keras")
         return
 
     print(f"Loading model from {args.model}...")
