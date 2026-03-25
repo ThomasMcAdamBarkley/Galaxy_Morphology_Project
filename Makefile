@@ -10,7 +10,7 @@
 #   make predict IMAGE=data/images_train/100008.jpg
 #   make gradcam  IMAGE=data/images_train/100008.jpg
 
-.PHONY: install train train-hierarchical train-bar evaluate predict gradcam clean
+.PHONY: install train train-all train-hierarchical train-bar evaluate predict gradcam clean
 
 # ── defaults ──────────────────────────────────────────────────────────────────
 IMAGE ?= data/images_train/100008.jpg
@@ -32,6 +32,9 @@ train:
 
 train-hierarchical:
 	$(PYTHON) src/train_hierarchical.py --node $(NODE)
+
+train-all:
+	$(PYTHON) src/train_hierarchical.py --node all
 
 train-bar:
 	$(PYTHON) src/train_bar_efficientnet.py

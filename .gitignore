@@ -25,3 +25,6 @@ env/
 *.h5
 # But keep directory placeholders
 !src/models/.gitkeep
+
+# Ignore training logs (large/binary)
+outputs/*.log

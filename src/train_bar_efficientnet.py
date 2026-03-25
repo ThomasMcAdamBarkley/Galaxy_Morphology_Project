@@ -63,7 +63,7 @@ def make_generators(df: pd.DataFrame):
         height_shift_range=0.1,
         horizontal_flip=True,
         vertical_flip=True,
-        zoom_range=0.1,
+        zoom_range=0.05,
         fill_mode="nearest",
         validation_split=VAL_SPLIT,
     )
